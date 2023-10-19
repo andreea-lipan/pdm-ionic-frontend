@@ -1,0 +1,7 @@
+{
+  "name": "pdm_ionic_frontend",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
