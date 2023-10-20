@@ -4,11 +4,8 @@ import { getLogger } from '../logger';
 import { BeehiveProps } from './BeehiveProps';
 import { createBeehive, getBeehives, newWebSocket, updateBeehive } from './BeehiveAPIs';
 
-
 const log = getLogger('BeehiveProvider');
-
 type SaveBeehiveFn = (Beehive: BeehiveProps) => Promise<any>;
-
 
 export interface BeehivesState {
     Beehives?: BeehiveProps[],
