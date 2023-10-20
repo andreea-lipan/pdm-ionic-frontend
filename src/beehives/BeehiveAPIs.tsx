@@ -46,7 +46,7 @@ export const updateBeehive: (Beehive: BeehiveProps) => Promise<BeehiveProps[]> =
 interface MessageData {
     event: string;
     payload: {
-        Beehive: BeehiveProps;
+        beehive: BeehiveProps;
     };
 }
 

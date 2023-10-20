@@ -131,10 +131,11 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({ children }) =>
             if (canceled) {
                 return;
             }
-            const { event, payload: { Beehive }} = message;
+            const { event, payload: { beehive }} = message;
             log(`ws message, Beehive ${event}`);
+
             if (event === 'created' || event === 'updated') {
-                dispatch({ type: SAVE_BEEHIVE_SUCCEEDED, payload: { Beehives:Beehive } });
+                dispatch({ type: SAVE_BEEHIVE_SUCCEEDED, payload: { Beehives:beehive } });
             }
         });
         return () => {
