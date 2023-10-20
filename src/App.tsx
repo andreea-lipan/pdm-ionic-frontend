@@ -1,7 +1,9 @@
-import { Redirect, Route } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router';
-import Home from './pages/Home';
+import {Redirect, Route} from 'react-router-dom';
+import {IonApp, IonRouterOutlet, setupIonicReact} from '@ionic/react';
+import {IonReactRouter} from '@ionic/react-router';
+import {BeehiveProvider} from "./beehives/BeehiveProvider";
+import {BeehivesListPage} from "./beehives";
+import BeehiveEditPage from "./beehives/BeehiveEditPage";
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -25,18 +27,18 @@ import './theme/variables.css';
 setupIonicReact();
 
 const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <IonRouterOutlet>
-        <Route exact path="/home">
-          <Home />
-        </Route>
-        <Route exact path="/">
-          <Redirect to="/home" />
-        </Route>
-      </IonRouterOutlet>
-    </IonReactRouter>
-  </IonApp>
+    <IonApp>
+        <BeehiveProvider>
+            <IonReactRouter>
+                <IonRouterOutlet>
+                    <Route path="/beehives" component={BeehivesListPage} exact={true}/>
+                    <Route path="/beehive" component={BeehiveEditPage} exact={true}/>
+                    <Route path="/beehive/:id" component={BeehiveEditPage} exact={true}/>
+                    <Route exact path="/" render={() => <Redirect to="/beehives"/>}/>
+                </IonRouterOutlet>
+            </IonReactRouter>
+        </BeehiveProvider>
+    </IonApp>
 );
 
 export default App;
