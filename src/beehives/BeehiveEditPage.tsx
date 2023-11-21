@@ -32,7 +32,7 @@ const BeehiveEditPage: React.FC<BeehiveEditProps> = ({ history, match }) => {
     useEffect(() => {
         log('useEffect');
         const routeId = match.params.id || '';
-        const Beehive = Beehives?.find(beehive => beehive.id === routeId);
+        const Beehive = Beehives?.find(beehive => beehive._id === routeId);
         setBeehive(Beehive);
         if (Beehive) {
             setIndex(Beehive.index);

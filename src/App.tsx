@@ -1,8 +1,10 @@
 import {Redirect, Route} from 'react-router-dom';
+import React from "react";
 import {IonApp, IonRouterOutlet, setupIonicReact} from '@ionic/react';
 import {IonReactRouter} from '@ionic/react-router';
 import {BeehiveProvider} from "./beehives/BeehiveProvider";
 import {BeehivesListPage, BeehiveEditPage} from "./beehives";
+import {AuthProvider, Login, PrivateRoute} from "./auth";
 
 // npm run lint -> if wanna run by hand
 
@@ -29,16 +31,19 @@ setupIonicReact();
 
 const App: React.FC = () => (
     <IonApp>
-        <BeehiveProvider>
-            <IonReactRouter>
-                <IonRouterOutlet>
-                    <Route path="/beehives" component={BeehivesListPage} exact={true}/>
-                    <Route path="/beehive" component={BeehiveEditPage} exact={true}/>
-                    <Route path="/beehive/:id" component={BeehiveEditPage} exact={true}/>
+        <IonReactRouter>
+            <IonRouterOutlet>
+                <AuthProvider>
+                    <Route path="/login" component={Login} exact={true}/>
+                    <BeehiveProvider>
+                        <PrivateRoute path="/beehives" component={BeehivesListPage} exact={true}/>
+                        <PrivateRoute path="/beehive" component={BeehiveEditPage} exact={true}/>
+                        <PrivateRoute path="/beehive/:id" component={BeehiveEditPage} exact={true}/>
+                    </BeehiveProvider>
                     <Route exact path="/" render={() => <Redirect to="/beehives"/>}/>
-                </IonRouterOutlet>
-            </IonReactRouter>
-        </BeehiveProvider>
+                </AuthProvider>
+            </IonRouterOutlet>
+        </IonReactRouter>
     </IonApp>
 );
 

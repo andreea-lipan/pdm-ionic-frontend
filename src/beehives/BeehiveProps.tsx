@@ -2,7 +2,7 @@
     Properties of a Beehive entity
  */
 export interface BeehiveProps {
-    id?: string;
+    _id?: string;
     index: number;
     dateCreated: Date;
     autumnTreatment: boolean;
