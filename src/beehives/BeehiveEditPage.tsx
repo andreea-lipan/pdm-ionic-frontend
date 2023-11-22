@@ -21,7 +21,7 @@ interface BeehiveEditProps extends RouteComponentProps<{
     id?: string;
 }> {}
 
-const BeehiveEditPage: React.FC<BeehiveEditProps> = ({ history, match }) => {
+const BeehiveEditPage: React.FC<BeehiveEditProps> = ({ history, match}) => {
     const { Beehives, saving, savingError, saveBeehive } = useContext(BeehiveContext);
     const [index, setIndex] = useState(0);
     const [dateCreated, setDateCreated] = useState(new Date(Date.now()));
@@ -43,7 +43,8 @@ const BeehiveEditPage: React.FC<BeehiveEditProps> = ({ history, match }) => {
     }, [match.params.id, Beehives]);
 
     const handleSave = useCallback(() => {
-        const editedBeehive = Beehive ? { ...Beehive, index, dateCreated, autumnTreatment, managerName } : { index, dateCreated, autumnTreatment, managerName };
+        const editedBeehive = Beehive ? { ...Beehive, index, dateCreated, autumnTreatment, managerName } :
+                    { index, dateCreated, autumnTreatment, managerName };
         saveBeehive && saveBeehive(editedBeehive).then(() => history.goBack());
     }, [Beehive, saveBeehive, index, dateCreated, autumnTreatment, managerName, history]);
 

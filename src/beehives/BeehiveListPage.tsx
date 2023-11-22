@@ -26,13 +26,15 @@ import {getToken} from "../auth/authApi";
 const log = getLogger('BeehiveList');
 
 const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
-    const { Beehives, fetching, fetchingError , nextPage} = useContext(BeehiveContext);
+    const { Beehives, fetching, fetchingError , nextPage, onlineRefreshBeehives} = useContext(BeehiveContext);
 
     const {logout} = useContext(AuthContext)
     const {networkStatus} = useNetwork();
     log('render');
 
     const [currentPage, setCurrentPage] = useState(1);
+    log('CURRENTPAGE: ');
+    log(currentPage);
     const [disableInfiniteScroll, setDisableInfiniteScroll] = useState<boolean>(false);
 
     // SEARCH
@@ -58,6 +60,14 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
             await nextPage(0, filter, search);
         }
     }
+
+
+    // refresh when back online
+    useEffect(() => {
+        if (networkStatus.connected) {
+            onlineRefreshBeehives && onlineRefreshBeehives();
+        }
+    }, [networkStatus.connected]);
 
 
     return (
@@ -118,7 +128,7 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
                 {Beehives && (
                     <IonList>
                         {Beehives.map(({ _id, index, dateCreated, autumnTreatment, managerName }) =>
-                            <Beehive key={_id} _id={_id} index={index} dateCreated={dateCreated} autumnTreatment={autumnTreatment} managerName={managerName}
+                            <Beehive key={index} _id={_id} index={index} dateCreated={dateCreated} autumnTreatment={autumnTreatment} managerName={managerName}
                                      onEdit={id => history.push(`/Beehive/${id}`)} />)}
                     </IonList>
                 )}

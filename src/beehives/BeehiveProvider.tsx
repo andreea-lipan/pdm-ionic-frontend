@@ -5,10 +5,12 @@ import {BeehiveProps} from './BeehiveProps';
 import {createBeehive, getBeehives, newWebSocket, updateBeehive} from './BeehiveAPIs';
 import {AuthContext} from '../auth'; // to yoink token
 import { Preferences } from '@capacitor/preferences';
+import {useNetwork} from "../core/useNetwork";
 
 const log = getLogger('BeehiveProvider');
-type SaveBeehiveFn = (Beehive: BeehiveProps) => Promise<any>;
+type SaveBeehiveFn = (Beehive: BeehiveProps, currentPage? :number) => Promise<any>;
 type NextBeehivesPageFn = (currentPage: number, filter: string, search: string) => void;
+type onlineRefreshBeehivesFn = () => void;
 
 export interface BeehivesState {
     Beehives?: BeehiveProps[],
@@ -18,6 +20,7 @@ export interface BeehivesState {
     savingError?: Error | null,
     saveBeehive?: SaveBeehiveFn,
     nextPage?: NextBeehivesPageFn,
+    onlineRefreshBeehives?: onlineRefreshBeehivesFn,
 }
 
 interface ActionProps {
@@ -50,17 +53,29 @@ const reducer: (state: BeehivesState, action: ActionProps) => BeehivesState =
             case SAVE_BEEHIVE_STARTED:
                 return {...state, savingError: null, saving: true};
             case SAVE_BEEHIVE_SUCCEEDED:
-                const Beehives = [...(state.Beehives || [])];
-                console.log(Beehives)
-                console.log(payload)
-                const Beehive = payload.Beehives;
-                const index = Beehives.findIndex(it => it._id === Beehive._id);
-                if (index === -1) {
-                    Beehives.splice(0, 0, Beehive);
-                } else {
-                    Beehives[index] = Beehive;
-                }
-                return {...state, Beehives: Beehives, saving: false};
+
+                // const Beehives = [...(state.Beehives || [])];
+                // console.log(Beehives)
+                // console.log(payload)
+                // const Beehive = payload.Beehives;
+                // const index = Beehives.findIndex(it => it._id === Beehive._id);
+                // if (index === -1) {
+                //     Beehives.splice(0, 0, Beehive);
+                // } else {
+                //     Beehives[index] = Beehive;
+                // }
+
+
+
+                // const Beehive = payload.Beehives;
+                // const index = Beehives.findIndex(it => it._id === Beehive._id);
+                // if (index === -1) {
+                //     Beehives.splice(0, 0, Beehive);
+                // } else {
+                //     Beehives[index] = Beehive;
+                // }
+
+                return {...state, saving: false};
             case SAVE_BEEHIVE_FAILED:
                 return {...state, savingError: payload.error, saving: false};
             case NEXT_BEEHIVES_PAGE:
@@ -86,7 +101,17 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
     useEffect(wsEffect, [token]);
     const saveBeehive = useCallback<SaveBeehiveFn>(saveBeehiveCallback, []);
     const nextPage = useCallback<NextBeehivesPageFn>(nextPageCallback, []);
-    const value = {Beehives, fetching, fetchingError, saving, savingError, saveBeehive, nextPage};
+    const onlineRefreshBeehives = useCallback<onlineRefreshBeehivesFn>(onlineRefreshBeehivesCallBack, []);
+    const value = {Beehives, fetching, fetchingError, saving, savingError, saveBeehive, nextPage, onlineRefreshBeehives};
+
+    const {networkStatus} = useNetwork();
+
+    useEffect(() => {
+        if (networkStatus.connected) {
+            getBeehivesEffect();
+        }
+      },
+      [networkStatus.connected]);
 
     log('returns');
     return (
@@ -105,41 +130,114 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
         }
 
         async function fetchBeehives() {
-            try {
-                log('fetchBeehives started');
-                dispatch({type: FETCH_BEEHIVES_STARTED});
-                let Beehives = await getBeehives();
-                log('fetchBeehives succeeded');
 
-                // fetch successful save data in preferences
-                await Preferences.set({ key: 'Beehives', value: JSON.stringify(Beehives) });
+            if (networkStatus.connected) {
+                try {
+                    log('fetchBeehives started');
+                    dispatch({type: FETCH_BEEHIVES_STARTED});
+                    let Beehives = await getBeehives();
+                    log('fetchBeehives succeeded');
 
-                // give the listPage component only first page of data
-                Beehives = Beehives.slice(0, 20);
+                    // fetch successful save data in preferences
+                    await Preferences.set({key: 'Beehives', value: JSON.stringify(Beehives)});
 
-                if (!canceled) {
-                    dispatch({type: FETCH_BEEHIVES_SUCCEEDED, payload: {Beehives: Beehives}});
+                    // give the listPage component only first page of data
+                    Beehives = Beehives.slice(0, 20);
+
+                    if (!canceled) {
+                        dispatch({type: FETCH_BEEHIVES_SUCCEEDED, payload: {Beehives: Beehives}});
+                    }
+                } catch (error) {
+                    log('fetchBeehives failed');
+                    if (!canceled) {
+                        dispatch({type: FETCH_BEEHIVES_FAILED, payload: {error}});
+                    }
                 }
-            } catch (error) {
-                log('fetchBeehives failed');
-                if (!canceled) {
-                    dispatch({type: FETCH_BEEHIVES_FAILED, payload: {error}});
+            } else {
+                // fetch from preferences
+                let Beehivess = await Preferences.get({ key: 'Beehives' });
+                let b : BeehiveProps[] = [];
+                if (Beehivess.value) {
+                    b = JSON.parse(Beehivess.value) as BeehiveProps[];
                 }
+                b = b.slice(0, 20);
+                dispatch({type: FETCH_BEEHIVES_SUCCEEDED, payload: {Beehives: b}});
             }
+
         }
 
     }
 
     async function saveBeehiveCallback(Beehive: BeehiveProps) {
-        try {
-            log('saveBeehive started');
-            dispatch({type: SAVE_BEEHIVE_STARTED});
-            const savedBeehive = await (Beehive._id ? updateBeehive(Beehive) : createBeehive(Beehive));
-            log('saveBeehive succeeded');
-            dispatch({type: SAVE_BEEHIVE_SUCCEEDED, payload: {Beehives: savedBeehive}});
-        } catch (error) {
-            log('saveBeehive failed');
-            dispatch({type: SAVE_BEEHIVE_FAILED, payload: {error}});
+        console.log("BEEHIVE: ");
+
+        console.log("network status: " + networkStatus.connected);
+
+        if(networkStatus.connected) {
+            try {
+                log('saveBeehive started');
+                dispatch({type: SAVE_BEEHIVE_STARTED});
+                const savedBeehive = await (Beehive._id ? updateBeehive(Beehive) : createBeehive(Beehive));
+                log('saveBeehive succeeded');
+                dispatch({type: SAVE_BEEHIVE_SUCCEEDED, payload: {Beehives: savedBeehive}});
+            } catch (error) {
+                log('saveBeehive failed');
+                dispatch({type: SAVE_BEEHIVE_FAILED, payload: {error}});
+
+
+            }
+
+         } else {
+
+
+        // save in preferences
+        let BeehivesLocal = await Preferences.get({ key: 'BeehivesLocal' });
+        let b : BeehiveProps[] = [];
+        if (BeehivesLocal.value) {
+            b = JSON.parse(BeehivesLocal.value) as BeehiveProps[];
+        }
+
+        let index = b.findIndex(it => it.index === Beehive.index);
+        if (index === -1) {
+            b.splice(0, 0, Beehive);
+        } else {
+            b[index] = Beehive;
+        }
+        await Preferences.set({ key: 'BeehivesLocal', value: JSON.stringify(b) });
+          }
+
+
+        // refresh the list from the server
+        if (networkStatus.connected) {
+            await getBeehivesEffect();
+        } else {
+            // refresh the list from the preferences
+            let Beehivess= await Preferences.get({ key: 'Beehives' });
+            let BeehivesLocal = await Preferences.get({ key: 'BeehivesLocal' });
+            let b : BeehiveProps[] = [];
+            let b2 : BeehiveProps[] = [];
+            if (Beehivess.value) {
+                b = JSON.parse(Beehivess.value) as BeehiveProps[];
+            }
+            if (BeehivesLocal.value) {
+                b2 = JSON.parse(BeehivesLocal.value) as BeehiveProps[];
+            }
+            b = b.concat(b2);
+            b = b.slice(0, 20); // first page
+            dispatch({type: FETCH_BEEHIVES_SUCCEEDED, payload: {Beehives: b}});
+        }
+
+    }
+
+    async function onlineRefreshBeehivesCallBack() {
+        let BeehivesLocal = await Preferences.get({ key: 'BeehivesLocal' });
+        let b : BeehiveProps[] = [];
+        if (BeehivesLocal.value) {
+            b = JSON.parse(BeehivesLocal.value) as BeehiveProps[];
+        }
+        for (let i = b.length; i >= 0; i--) {
+            await saveBeehiveCallback(b[i]);
+            b.pop();
         }
     }
 
@@ -181,11 +279,18 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
 
         // give the listPage component only first page of data
         let Beehivess= await Preferences.get({ key: 'Beehives' });
+        let BeehivesLocal = await Preferences.get({ key: 'BeehivesLocal' });
 
         let b : BeehiveProps[] = [];
+        let b2 : BeehiveProps[] = [];
         if (Beehivess.value) {
              b = JSON.parse(Beehivess.value) as BeehiveProps[];
         }
+        if (BeehivesLocal.value) {
+            b2 = JSON.parse(BeehivesLocal.value) as BeehiveProps[];
+        }
+
+        b = b.concat(b2);
 
         let resultBeehives : BeehiveProps[] = [];
 
@@ -196,7 +301,7 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
             } else {
                 resultBeehives = b.filter(beehive => beehive.autumnTreatment !== (filter === "no"));
             }
-            resultBeehives = resultBeehives.slice(0, currentPage * 20 + 20);
+            //resultBeehives = resultBeehives.slice(0, currentPage * 20 + 20);
 
         }
         if (search !== "" && search != undefined) {  // check if any search is applied
@@ -217,8 +322,11 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
                     }
                 }
             }
-            resultBeehives = resultBeehives.slice(0, currentPage * 20 + 20);
+            //resultBeehives = resultBeehives.slice(0, currentPage * 20 + 20);
 
+        }
+        if (resultBeehives.length !== 0) {
+            resultBeehives = resultBeehives.slice(0, currentPage * 20 + 20);
         }
         if (filter === undefined && search === "") {  // else just give the next page
             console.log("next page")
