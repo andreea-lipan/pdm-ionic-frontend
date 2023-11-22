@@ -9,10 +9,12 @@ interface PaintingPropsExt extends BeehiveProps {
     onEdit: (_id?: string) => void;
 }
 
-const Beehive: React.FC<PaintingPropsExt> = ({ _id, index, onEdit }) => {
+const Beehive: React.FC<PaintingPropsExt> = ({ _id, index,managerName, autumnTreatment,  onEdit }) => {
     return (
         <IonItem onClick={() => onEdit(_id)}>
             <IonLabel>{index}</IonLabel>
+            <IonLabel>{managerName}</IonLabel>
+            <IonLabel>{autumnTreatment ? "yes" : "no"}</IonLabel>
         </IonItem>
     );
 };

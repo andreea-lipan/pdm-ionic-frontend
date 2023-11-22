@@ -4,7 +4,8 @@ import {getLogger} from '../logger';
 import {BeehiveProps} from './BeehiveProps';
 import {createBeehive, getBeehives, newWebSocket, updateBeehive} from './BeehiveAPIs';
 import {AuthContext} from '../auth'; // to yoink token
-import { Preferences } from '@capacitor/preferences';
+import {Preferences} from '@capacitor/preferences';
+import {useNetwork} from "../core/useNetwork";
 
 const log = getLogger('BeehiveProvider');
 type SaveBeehiveFn = (Beehive: BeehiveProps) => Promise<any>;
@@ -51,9 +52,8 @@ const reducer: (state: BeehivesState, action: ActionProps) => BeehivesState =
                 return {...state, savingError: null, saving: true};
             case SAVE_BEEHIVE_SUCCEEDED:
                 const Beehives = [...(state.Beehives || [])];
-                console.log(Beehives)
-                console.log(payload)
-                const Beehive = payload.Beehives;
+
+                const Beehive = payload;
                 const index = Beehives.findIndex(it => it._id === Beehive._id);
                 if (index === -1) {
                     Beehives.splice(0, 0, Beehive);
@@ -88,6 +88,8 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
     const nextPage = useCallback<NextBeehivesPageFn>(nextPageCallback, []);
     const value = {Beehives, fetching, fetchingError, saving, savingError, saveBeehive, nextPage};
 
+    const {networkStatus} = useNetwork();
+
     log('returns');
     return (
         <BeehiveContext.Provider value={value}>
@@ -112,7 +114,7 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
                 log('fetchBeehives succeeded');
 
                 // fetch successful save data in preferences
-                await Preferences.set({ key: 'Beehives', value: JSON.stringify(Beehives) });
+                await Preferences.set({key: 'Beehives', value: JSON.stringify(Beehives)});
 
                 // give the listPage component only first page of data
                 Beehives = Beehives.slice(0, 20);
@@ -131,16 +133,50 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
     }
 
     async function saveBeehiveCallback(Beehive: BeehiveProps) {
-        try {
-            log('saveBeehive started');
-            dispatch({type: SAVE_BEEHIVE_STARTED});
-            const savedBeehive = await (Beehive._id ? updateBeehive(Beehive) : createBeehive(Beehive));
-            log('saveBeehive succeeded');
-            dispatch({type: SAVE_BEEHIVE_SUCCEEDED, payload: {Beehives: savedBeehive}});
-        } catch (error) {
-            log('saveBeehive failed');
-            dispatch({type: SAVE_BEEHIVE_FAILED, payload: {error}});
+        console.log("status");
+        console.log(localStorage.getItem("status"));
+        if (localStorage.getItem("status") === "true") {
+            console.log("ONLINE sending add/edit to srv\n");
+            try {
+                log('saveBeehive started');
+                dispatch({type: SAVE_BEEHIVE_STARTED});
+                const savedBeehive = await (Beehive._id ? updateBeehive(Beehive) : createBeehive(Beehive));
+                //log('saveBeehive succeeded');
+                //dispatch({type: SAVE_BEEHIVE_SUCCEEDED, payload: {Beehives: savedBeehive}});
+            } catch (error) {
+                log('saveBeehive failed');
+                dispatch({type: SAVE_BEEHIVE_FAILED, payload: {error}});
+            }
+        } else {
+            console.log("OFFLINE cannot add/edit\n");
         }
+    }
+
+    async function AddUpdateBeehiveLocally(Beehive: BeehiveProps) {
+        console.log("addupdate locally");
+        console.log("beehive: " + Beehive.index);
+        let Beehivess = await Preferences.get({ key: 'Beehives' });
+        let b : BeehiveProps[] = [];
+        if (Beehivess.value) {
+            b = JSON.parse(Beehivess.value) as BeehiveProps[];
+        }
+        // update the Beehive from b
+        let foundIt = false;
+        for (let i = b.length - 1; i >= 0; i--) {
+            if (b[i]._id === Beehive._id) {
+                b[i] = Beehive;
+                foundIt = true;
+                console.log("found it");
+            }
+        }
+        if (!foundIt) {
+            b.push(Beehive);
+        }
+
+        await Preferences.set({key: 'Beehives', value: JSON.stringify(b)});
+
+        // give the listPage component only first page of data
+        b = b.slice(0, 20);
     }
 
     function wsEffect() {
@@ -151,14 +187,22 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
         let closeWebSocket: () => void;
         if (token?.trim()) {
             closeWebSocket = newWebSocket(message => {
+                console.log("SERVER BROADCAST THING");
+                console.log(message)
+
                 if (canceled) {
                     return;
                 }
-                const {event, payload: {beehive}} = message;
+                const {event, payload} = message;
                 log(`ws message, Beehive ${event}`);
+                log(`Beehive: ${payload.index}`);
+                //log(`Beehive idex: ${beehive.index}`);
 
                 if (event === 'created' || event === 'updated') {
-                    dispatch({type: SAVE_BEEHIVE_SUCCEEDED, payload: {Beehives: beehive}});
+
+                    console.log("before AddUpdateBeehiveLocally")
+                    AddUpdateBeehiveLocally(payload as BeehiveProps);
+                    dispatch({type: SAVE_BEEHIVE_SUCCEEDED, payload});
                 }
             });
         }
@@ -180,14 +224,14 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
         console.log("search: " + search);
 
         // give the listPage component only first page of data
-        let Beehivess= await Preferences.get({ key: 'Beehives' });
+        let Beehivess = await Preferences.get({key: 'Beehives'});
 
-        let b : BeehiveProps[] = [];
+        let b: BeehiveProps[] = [];
         if (Beehivess.value) {
-             b = JSON.parse(Beehivess.value) as BeehiveProps[];
+            b = JSON.parse(Beehivess.value) as BeehiveProps[];
         }
 
-        let resultBeehives : BeehiveProps[] = [];
+        let resultBeehives: BeehiveProps[] = [];
 
         if ((filter === "yes" || filter === "no") && filter != undefined) {  // check if any filter is applied
             console.log("filtering")
