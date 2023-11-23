@@ -6,6 +6,7 @@ import {createBeehive, getBeehives, newWebSocket, updateBeehive} from './Beehive
 import {AuthContext} from '../auth'; // to yoink token
 import {Preferences} from '@capacitor/preferences';
 import {useNetwork} from "../core/useNetwork";
+import {useFilesystem} from "../core/useFilesystem";
 
 const log = getLogger('BeehiveProvider');
 type SaveBeehiveFn = (Beehive: BeehiveProps) => Promise<any>;
@@ -88,6 +89,8 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
     const nextPage = useCallback<NextBeehivesPageFn>(nextPageCallback, []);
     const value = {Beehives, fetching, fetchingError, saving, savingError, saveBeehive, nextPage};
 
+    const {readFile, writeFile, deleteFile} = useFilesystem();
+
     const {networkStatus} = useNetwork();
 
     useEffect(() => {
@@ -106,9 +109,9 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
 
     async function backOnline() {
         // get beehivesLocal
-        let BeehivesLocal = await Preferences.get({ key: 'BeehivesLocal' });
+        let BeehivesLocal = await Preferences.get({key: 'BeehivesLocal'});
 
-        let beesLocal : BeehiveProps[] = [];
+        let beesLocal: BeehiveProps[] = [];
 
         if (BeehivesLocal.value) {
             beesLocal = JSON.parse(BeehivesLocal.value) as BeehiveProps[];
@@ -121,7 +124,7 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
         }
 
         // empty beehivesLocal
-        Preferences.set({ key: 'BeehivesLocal', value: JSON.stringify([]) });
+        Preferences.set({key: 'BeehivesLocal', value: JSON.stringify([])});
     }
 
     log('returns');
@@ -149,6 +152,18 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
                     let Beehives = await getBeehives();
                     log('fetchBeehives succeeded');
 
+                    // make the Beehive webviewpath be a filepath
+                    for (let i = 0; i < Beehives.length; i++) {
+                        if (Beehives[i].photos !== undefined) {
+                            for (let j = 0; j < Beehives[i].photos.length; j++) {
+                                // save the webview img in a file
+                                let filepath = new Date().getTime() + '.jpeg';
+                                await writeFile(filepath, Beehives[i].photos[j]!);
+                                Beehives[i].photos[j] = filepath;
+                            }
+                        }
+                    }
+
                     // fetch successful save data in preferences
                     await Preferences.set({key: 'Beehives', value: JSON.stringify(Beehives)});
                     await Preferences.set({key: 'BeehivesLocal', value: JSON.stringify([])});
@@ -167,11 +182,11 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
                 }
             } else {
                 // load up from preferinte
-                let BeehivesLocal = await Preferences.get({ key: 'BeehivesLocal' });
-                let Beehivess= await Preferences.get({ key: 'Beehives' });
+                let BeehivesLocal = await Preferences.get({key: 'BeehivesLocal'});
+                let Beehivess = await Preferences.get({key: 'Beehives'});
 
-                let bees : BeehiveProps[] = [];
-                let beesLocal : BeehiveProps[] = [];
+                let bees: BeehiveProps[] = [];
+                let beesLocal: BeehiveProps[] = [];
                 if (Beehivess.value) {
                     bees = JSON.parse(Beehivess.value) as BeehiveProps[];
                 }
@@ -196,6 +211,19 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
                 log('saveBeehive started');
                 dispatch({type: SAVE_BEEHIVE_STARTED});
                 Beehive.saved = true;
+
+                // save the photos in the server, switch from filepath to webview
+                console.log("Beehive.photos");
+                console.log(Beehive.photos);
+                if (Beehive.photos !== undefined) {
+                    console.log("saving photos")
+                    for (let i = 0; i < Beehive.photos.length; i++) {
+                        console.log("saving photo " + i);
+                        let data = await readFile(Beehive.photos[i]);
+                        Beehive.photos[i] = `data:image/jpeg;base64,${data}`;
+                    }
+                }
+
                 const savedBeehive = await (Beehive._id ? updateBeehive(Beehive) : createBeehive(Beehive));
                 //log('saveBeehive succeeded');
                 //dispatch({type: SAVE_BEEHIVE_SUCCEEDED, payload: {Beehives: savedBeehive}});
@@ -208,11 +236,11 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
             Beehive.saved = false;
 
             // save in preferences
-            let BeehivesLocal = await Preferences.get({ key: 'BeehivesLocal' });
-            let Beehivess= await Preferences.get({ key: 'Beehives' });
+            let BeehivesLocal = await Preferences.get({key: 'BeehivesLocal'});
+            let Beehivess = await Preferences.get({key: 'Beehives'});
 
-            let bees : BeehiveProps[] = [];
-            let beesLocal : BeehiveProps[] = [];
+            let bees: BeehiveProps[] = [];
+            let beesLocal: BeehiveProps[] = [];
             if (Beehivess.value) {
                 bees = JSON.parse(Beehivess.value) as BeehiveProps[];
             }
@@ -237,8 +265,8 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
                 bees.splice(index, 1);
             }
 
-            await Preferences.set({ key: 'BeehivesLocal', value: JSON.stringify(beesLocal) });
-            await Preferences.set({ key: 'Beehives', value: JSON.stringify(bees) });
+            await Preferences.set({key: 'BeehivesLocal', value: JSON.stringify(beesLocal)});
+            await Preferences.set({key: 'Beehives', value: JSON.stringify(bees)});
 
             getBeehivesEffect();
         }
@@ -262,6 +290,18 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
                 console.log("found it");
             }
         }
+
+        // webview to filepath
+        if (Beehive.photos !== undefined) {
+            for (let j = 0; j < Beehive.photos.length; j++) {
+                // save the webview img in a file
+                let filepath = new Date().getTime() + '.jpeg';
+                await writeFile(filepath, Beehive.photos[j]!);
+                Beehive.photos[j] = filepath;
+            }
+        }
+
+
         if (!foundIt) {
             b.push(Beehive);
         }
@@ -317,11 +357,11 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
         console.log("search: " + search);
 
         // give the listPage component only first page of data
-        let Beehivess= await Preferences.get({ key: 'Beehives' });
-        let BeehivesLocal = await Preferences.get({ key: 'BeehivesLocal' });
+        let Beehivess = await Preferences.get({key: 'Beehives'});
+        let BeehivesLocal = await Preferences.get({key: 'BeehivesLocal'});
 
-        let b : BeehiveProps[] = [];
-        let b2 : BeehiveProps[] = [];
+        let b: BeehiveProps[] = [];
+        let b2: BeehiveProps[] = [];
         if (Beehivess.value) {
             b = JSON.parse(Beehivess.value) as BeehiveProps[];
         }
@@ -350,7 +390,7 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
                 for (let i = resultBeehives.length - 1; i >= 0; i--) {
                     if (!resultBeehives[i].managerName.includes(search)) {
                         console.log("removing " + resultBeehives[i].managerName)
-                            //resultBeehives.pop();
+                        //resultBeehives.pop();
                         resultBeehives.splice(i, 1);
                     }
                 }
@@ -371,7 +411,7 @@ export const BeehiveProvider: React.FC<BeehiveProviderProps> = ({children}) => {
         resultBeehives = resultBeehives.slice(0, currentPage * 20 + 20);
 
 
-        if ((filter === undefined || filter === "empty" ) && search === "") {  // else just give the next page
+        if ((filter === undefined || filter === "empty") && search === "") {  // else just give the next page
             console.log("next page")
             resultBeehives = b.slice(0, currentPage * 20 + 20);
         }

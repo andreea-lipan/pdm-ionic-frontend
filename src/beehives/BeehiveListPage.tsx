@@ -1,18 +1,19 @@
 import React, {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {
-    IonButton, IonCard,
+    IonActionSheet,
+    IonButton, IonCard, IonCol,
     IonContent,
     IonFab,
-    IonFabButton,
+    IonFabButton, IonGrid,
     IonHeader,
-    IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonLabel,
+    IonIcon, IonImg, IonInfiniteScroll, IonInfiniteScrollContent, IonLabel,
     IonList, IonLoading,
-    IonPage, IonSearchbar, IonSelect, IonSelectOption, IonText,
+    IonPage, IonRow, IonSearchbar, IonSelect, IonSelectOption, IonText,
     IonTitle,
     IonToolbar
 } from '@ionic/react';
-import {add} from 'ionicons/icons';
+import {add, camera, trash} from 'ionicons/icons';
 import Beehive from './Beehive';
 import {getLogger} from '../logger';
 import {BeehiveContext} from './BeehiveProvider';
@@ -22,11 +23,19 @@ import {BeehiveProps} from "./BeehiveProps";
 import axios from "axios";
 import {authConfig} from "../core";
 import {getToken} from "../auth/authApi";
+import {usePhotos} from "../core/usePhotos";
 
 const log = getLogger('BeehiveList');
 
+export interface MyPhoto {
+    filepath: string;
+    webviewPath?: string;
+}
+
+const PHOTOS = 'photos';
+
 const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
-    const { Beehives, fetching, fetchingError , nextPage, onlineRefreshBeehives} = useContext(BeehiveContext);
+    const { Beehives, fetching, fetchingError , nextPage} = useContext(BeehiveContext);
 
     const {logout} = useContext(AuthContext)
     const {networkStatus} = useNetwork();
@@ -43,6 +52,8 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
 
     // FILTRARE
     const [filter, setFilter] = useState<string | undefined>(undefined);
+
+
 
 
     async function nextPageHandler ($event: CustomEvent<void>) {
@@ -62,12 +73,12 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
     }
 
 
-    // refresh when back online
-    useEffect(() => {
-        if (networkStatus.connected) {
-            onlineRefreshBeehives && onlineRefreshBeehives();
-        }
-    }, [networkStatus.connected]);
+    // // refresh when back online
+    // useEffect(() => {
+    //     if (networkStatus.connected) {
+    //         onlineRefreshBeehives && onlineRefreshBeehives();
+    //     }
+    // }, [networkStatus.connected]);
 
 
     return (
@@ -82,6 +93,10 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
+
+
+
+
                 {/*<IonLoading isOpen={fetching} message="Fetching Beehives" />*/}
                 {/*{Beehives && (*/}
                 {/*    <IonList>*/}

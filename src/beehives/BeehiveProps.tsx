@@ -8,4 +8,5 @@ export interface BeehiveProps {
     autumnTreatment: boolean;
     managerName: string;
     saved: boolean;
+    photos: string[];
 }
