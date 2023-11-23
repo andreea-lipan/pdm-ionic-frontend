@@ -127,9 +127,10 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
                 {/*  ELEMES */}
                 {Beehives && (
                     <IonList>
-                        {Beehives.map(({ _id, index, dateCreated, autumnTreatment, managerName }) =>
-                            <Beehive key={index} _id={_id} index={index} dateCreated={dateCreated} autumnTreatment={autumnTreatment} managerName={managerName}
-                                     onEdit={id => history.push(`/Beehive/${id}`)} />)}
+                        {Beehives.map(({ _id, index, dateCreated, autumnTreatment, managerName, saved }) =>
+                            <Beehive key={index} _id={_id} index={index} dateCreated={dateCreated} autumnTreatment={autumnTreatment} managerName={managerName} saved={saved}
+                                     onEdit={id => history.push(`/Beehive/${id}`)}
+                            />)}
                     </IonList>
                 )}
 

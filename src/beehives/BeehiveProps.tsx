@@ -7,4 +7,5 @@ export interface BeehiveProps {
     dateCreated: Date;
     autumnTreatment: boolean;
     managerName: string;
+    saved: boolean;
 }
