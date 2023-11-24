@@ -9,4 +9,6 @@ export interface BeehiveProps {
     managerName: string;
     saved: boolean;
     photos: string[];
+    lat: number;
+    lng: number;
 }

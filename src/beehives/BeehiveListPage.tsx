@@ -1,6 +1,8 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {
+    CreateAnimation,
+    createAnimation,
     IonActionSheet,
     IonButton, IonCard, IonCol,
     IonContent,
@@ -24,6 +26,7 @@ import axios from "axios";
 import {authConfig} from "../core";
 import {getToken} from "../auth/authApi";
 import {usePhotos} from "../core/usePhotos";
+import {MyModal} from "../components/MyModal";
 
 const log = getLogger('BeehiveList');
 
@@ -35,7 +38,7 @@ export interface MyPhoto {
 const PHOTOS = 'photos';
 
 const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
-    const { Beehives, fetching, fetchingError , nextPage} = useContext(BeehiveContext);
+    const {Beehives, fetching, fetchingError, nextPage} = useContext(BeehiveContext);
 
     const {logout} = useContext(AuthContext)
     const {networkStatus} = useNetwork();
@@ -54,9 +57,7 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
     const [filter, setFilter] = useState<string | undefined>(undefined);
 
 
-
-
-    async function nextPageHandler ($event: CustomEvent<void>) {
+    async function nextPageHandler($event: CustomEvent<void>) {
         console.log($event.target);
         if (nextPage) {
             await nextPage(currentPage, filter, searchValue);
@@ -73,28 +74,65 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
     }
 
 
-    // // refresh when back online
-    // useEffect(() => {
-    //     if (networkStatus.connected) {
-    //         onlineRefreshBeehives && onlineRefreshBeehives();
-    //     }
-    // }, [networkStatus.connected]);
+    // ANIMATION
 
+    function simpleAnimationJS() {
+        const el = document.querySelector('.square-a');
+        if (el) {
+            const animation = createAnimation()
+                .addElement(el)
+                .duration(1000)
+                .direction('alternate')
+                .iterations(Infinity)
+                .keyframes([
+                    {offset: 0, transform: 'scale(1.5)', opacity: '1'},
+                    {offset: 0.25, transform: 'scale(1)', opacity: '1'},
+                    {offset: 0.5, transform: 'scale(0.5)', opacity: '0.2'}
+                ]);
+            animation.play();
+        }
+    }
+
+    const animationRef = useRef<CreateAnimation>(null);
+    const animationRef2 = useRef<CreateAnimation>(null);
+    useEffect(simpleAnimationJS, []);
+    useEffect(simpleAnimationReact, [animationRef2.current]);
+
+
+    function simpleAnimationReact() {
+        if (animationRef2.current !== null) {
+            animationRef2.current.animation.play();
+        }
+    }
 
     return (
         <IonPage>
             <IonHeader>
                 <IonToolbar>
-                    <IonTitle>Beehives</IonTitle>
+                    <div className="square-a">
+                        <IonTitle>Beehives</IonTitle>
+                    </div>
+                    <CreateAnimation
+                        ref={animationRef2}
+                        duration={5000}
+                        fromTo={{
+                            property: 'transform',
+                            fromValue: 'translateY(0) rotate(0)',
+                            toValue: `translateY(200px) rotate(180deg)`,
+                        }}
+                        easing="ease-out">
+                        <div>Hiiiiiiiiii</div>
+                    </CreateAnimation>
 
-                    <IonButton  onClick={logout}>Log out</IonButton>
-                    <IonText className="ion-float-right">{networkStatus.connected ? "connected" : "not connected"}</IonText>
+                    <IonButton onClick={logout}>Log out</IonButton>
+                    <MyModal/>
+
+                    <IonText
+                        className="ion-float-right">{networkStatus.connected ? "connected" : "not connected"}</IonText>
                     {/*<IonButton onClick={nextPageHandler}>NEXT!</IonButton>*/}
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
-
-
 
 
                 {/*<IonLoading isOpen={fetching} message="Fetching Beehives" />*/}
@@ -105,7 +143,6 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
                 {/*                     onEdit={id => history.push(`/Beehive/${id}`)} />)}*/}
                 {/*    </IonList>*/}
                 {/*)}*/}
-
 
 
                 {/*{items.map((item: string, i: number) => {*/}
@@ -142,8 +179,9 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
                 {/*  ELEMES */}
                 {Beehives && (
                     <IonList>
-                        {Beehives.map(({ _id, index, dateCreated, autumnTreatment, managerName, saved }) =>
-                            <Beehive key={index} _id={_id} index={index} dateCreated={dateCreated} autumnTreatment={autumnTreatment} managerName={managerName} saved={saved}
+                        {Beehives.map(({_id, index, dateCreated, autumnTreatment, managerName, saved}) =>
+                            <Beehive key={index} _id={_id} index={index} dateCreated={dateCreated}
+                                     autumnTreatment={autumnTreatment} managerName={managerName} saved={saved}
                                      onEdit={id => history.push(`/Beehive/${id}`)}
                             />)}
                     </IonList>
@@ -162,7 +200,7 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
                 )}
                 <IonFab vertical="bottom" horizontal="end" slot="fixed">
                     <IonFabButton onClick={() => history.push('/Beehive')}>
-                        <IonIcon icon={add} />
+                        <IonIcon icon={add}/>
                     </IonFabButton>
                 </IonFab>
 

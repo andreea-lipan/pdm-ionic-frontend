@@ -21,6 +21,7 @@ import {MyPhoto} from "./BeehiveListPage";
 import {useFilesystem} from "../core/useFilesystem";
 import {usePreferences} from "../core/usePreferences";
 import {useCamera} from '../core/useCamera';
+import MyMap from "../components/MyMap";
 
 const log = getLogger('BeehiveEditPage');
 
@@ -35,6 +36,8 @@ const BeehiveEditPage: React.FC<BeehiveEditProps> = ({history, match}) => {
     const [dateCreated, setDateCreated] = useState(new Date(Date.now()));
     const [managerName, setManagerName] = useState('');
     const [autumnTreatment, setAutumnTreatment] = useState(false);
+    const [lat, setLat] = useState(46.7698512402512);
+    const [lng, setLng] = useState(23.626224272127693);
     const [Beehive, setBeehive] = useState<BeehiveProps>();
 
 
@@ -111,6 +114,12 @@ const BeehiveEditPage: React.FC<BeehiveEditProps> = ({history, match}) => {
             setDateCreated(new Date(Beehive.dateCreated));
             setAutumnTreatment(Beehive.autumnTreatment);
             setManagerName(Beehive.managerName);
+            if (Beehive.lat !== undefined) {
+                setLat(Beehive.lat);
+            }
+            if (Beehive.lng !== undefined) {
+                setLng(Beehive.lng);
+            }
             setPhotoPaths(Beehive.photos);
             loadPhotos();
         }
@@ -123,11 +132,13 @@ const BeehiveEditPage: React.FC<BeehiveEditProps> = ({history, match}) => {
             dateCreated,
             autumnTreatment,
             managerName,
-            photos: photoPaths
-        } : {index, dateCreated, autumnTreatment, managerName, photos : photoPaths};
+            photos: photoPaths,
+            lat,
+            lng
+        } : {index, dateCreated, autumnTreatment, managerName, photos : photoPaths, lat, lng};
         console.log('editedBeehive', editedBeehive);
         saveBeehive && saveBeehive(editedBeehive).then(() => history.goBack());
-    }, [Beehive, saveBeehive, index, dateCreated, autumnTreatment, managerName, photoPaths, history]);
+    }, [Beehive, saveBeehive, index, dateCreated, autumnTreatment, managerName, photoPaths, lat, lng, history]);
 
     log('render');
     return (
@@ -178,6 +189,25 @@ const BeehiveEditPage: React.FC<BeehiveEditProps> = ({history, match}) => {
                     </IonFabButton>
                 </IonFab>
 
+
+
+                {/* GOOGLE MAP */}
+                <div>My Location is</div>
+                {
+                    (lat == 46.7698512402512 && lng == 23.626224272127693) ?
+                        <div> NOT SET</div> : <></>
+                }
+                <div>latitude: {lat}</div>
+                <div>longitude: {lng}</div>
+                {lat && lng &&
+                    <MyMap
+                        lat={lat}
+                        lng={lng}
+                    />}
+
+
+
+                {/* ERROR */}
 
                 <IonLoading isOpen={saving}/>
                 {savingError && (
