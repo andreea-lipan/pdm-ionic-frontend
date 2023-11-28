@@ -22,6 +22,8 @@ import {useFilesystem} from "../core/useFilesystem";
 import {usePreferences} from "../core/usePreferences";
 import {useCamera} from '../core/useCamera';
 import MyMap from "../components/MyMap";
+import {LatLngContext} from "./LatLngProvider";
+import MapNoMarkers from "../components/MapNoMarkers";
 
 const log = getLogger('BeehiveEditPage');
 
@@ -36,8 +38,9 @@ const BeehiveEditPage: React.FC<BeehiveEditProps> = ({history, match}) => {
     const [dateCreated, setDateCreated] = useState(new Date(Date.now()));
     const [managerName, setManagerName] = useState('');
     const [autumnTreatment, setAutumnTreatment] = useState(false);
-    const [lat, setLat] = useState(46.7698512402512);
-    const [lng, setLng] = useState(23.626224272127693);
+
+    const {latitudine, longitudine, upd} = useContext(LatLngContext);
+
     const [Beehive, setBeehive] = useState<BeehiveProps>();
 
 
@@ -114,12 +117,17 @@ const BeehiveEditPage: React.FC<BeehiveEditProps> = ({history, match}) => {
             setDateCreated(new Date(Beehive.dateCreated));
             setAutumnTreatment(Beehive.autumnTreatment);
             setManagerName(Beehive.managerName);
-            if (Beehive.lat !== undefined) {
-                setLat(Beehive.lat);
+            if (Beehive.lat !== undefined && Beehive.lng !== undefined) {
+                // use the existing coordinates
+                console.log('Beehive.lat', Beehive.lat);
+                console.log('Beehive.lng', Beehive.lng);
+                upd(Beehive.lat, Beehive.lng);
+            } else {
+                // set to default
+                console.log("SETTING TO DEFAULT")
+                upd(46.43822268835372, 23.18524534738386);
             }
-            if (Beehive.lng !== undefined) {
-                setLng(Beehive.lng);
-            }
+
             setPhotoPaths(Beehive.photos);
             loadPhotos();
         }
@@ -133,12 +141,12 @@ const BeehiveEditPage: React.FC<BeehiveEditProps> = ({history, match}) => {
             autumnTreatment,
             managerName,
             photos: photoPaths,
-            lat,
-            lng
-        } : {index, dateCreated, autumnTreatment, managerName, photos : photoPaths, lat, lng};
+            lat : latitudine,
+            lng : longitudine
+        } : {index, dateCreated, autumnTreatment, managerName, photos : photoPaths, lat : latitudine, lng : longitudine};
         console.log('editedBeehive', editedBeehive);
         saveBeehive && saveBeehive(editedBeehive).then(() => history.goBack());
-    }, [Beehive, saveBeehive, index, dateCreated, autumnTreatment, managerName, photoPaths, lat, lng, history]);
+    }, [Beehive, saveBeehive, index, dateCreated, autumnTreatment, managerName, photoPaths, latitudine, longitudine, history]);
 
     log('render');
     return (
@@ -193,17 +201,30 @@ const BeehiveEditPage: React.FC<BeehiveEditProps> = ({history, match}) => {
 
                 {/* GOOGLE MAP */}
                 <div>My Location is</div>
+
                 {
-                    (lat == 46.7698512402512 && lng == 23.626224272127693) ?
-                        <div> NOT SET</div> : <></>
+                    (latitudine === 46.43822268835372 && longitudine === 23.18524534738386) ? (
+                        <>
+                <div>latitude: - </div>
+                <div>longitude: - </div>
+                            <MapNoMarkers lat={latitudine} lng={longitudine}/>
+                            </>
+                        ) :
+                        <>
+
+                            <div>latitude: {latitudine} </div>
+                            <div>longitude: {longitudine} </div>
+                            <MyMap
+                                lat={latitudine}
+                                lng={longitudine}
+                            />
+                        </>
                 }
-                <div>latitude: {lat}</div>
-                <div>longitude: {lng}</div>
-                {lat && lng &&
-                    <MyMap
-                        lat={lat}
-                        lng={lng}
-                    />}
+
+                    {/*<MyMap*/}
+                    {/*    lat={latitudine}*/}
+                    {/*    lng={longitudine}*/}
+                    {/*/>*/}
 
 
 

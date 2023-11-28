@@ -26,6 +26,7 @@ import '@ionic/react/css/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import {LatLngProvider} from "./beehives/LatLngProvider";
 
 setupIonicReact();
 
@@ -36,9 +37,11 @@ const App: React.FC = () => (
                 <AuthProvider>
                     <Route path="/login" component={Login} exact={true}/>
                     <BeehiveProvider>
+                        <LatLngProvider>
                         <PrivateRoute path="/beehives" component={BeehivesListPage} exact={true}/>
-                        <PrivateRoute path="/beehive" component={BeehiveEditPage} exact={true}/>
+                            <PrivateRoute path="/beehive" component={BeehiveEditPage} exact={true}/>
                         <PrivateRoute path="/beehive/:id" component={BeehiveEditPage} exact={true}/>
+                        </LatLngProvider>
                     </BeehiveProvider>
                     <Route exact path="/" render={() => <Redirect to="/beehives"/>}/>
                 </AuthProvider>

@@ -93,6 +93,25 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
         }
     }
 
+    function animateIndexes() {
+        const el = document.querySelector('.square-b');
+        if (el) {
+            const animation = createAnimation()
+                .addElement(el)
+                .duration(1000)
+                .direction('alternate')
+                .iterations(1)
+                .keyframes([
+                    {offset: 0, opacity: '1'},
+                    {offset: 0.5,  opacity: '0.5'},
+                    {offset: 1, opacity: '1'}
+                ]);
+            animation.play();
+        }
+    }
+
+    useEffect(animateIndexes, [currentPage])
+
     const animationRef = useRef<CreateAnimation>(null);
     const animationRef2 = useRef<CreateAnimation>(null);
     useEffect(simpleAnimationJS, []);
@@ -178,7 +197,7 @@ const BeehiveListPage: React.FC<RouteComponentProps> = ({history}) => {
 
                 {/*  ELEMES */}
                 {Beehives && (
-                    <IonList>
+                    <IonList className="square-b">
                         {Beehives.map(({_id, index, dateCreated, autumnTreatment, managerName, saved}) =>
                             <Beehive key={index} _id={_id} index={index} dateCreated={dateCreated}
                                      autumnTreatment={autumnTreatment} managerName={managerName} saved={saved}

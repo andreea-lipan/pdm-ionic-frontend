@@ -9,7 +9,7 @@ interface MyMapProps {
 
 }
 
-const MyMap: React.FC<MyMapProps> = ({ lat, lng }) => {
+const MapNoMarkers: React.FC<MyMapProps> = ({ lat, lng }) => {
     const mapRef = useRef<HTMLElement>(null);
     useEffect(myMapEffect, [mapRef.current])
 
@@ -59,11 +59,11 @@ const MyMap: React.FC<MyMapProps> = ({ lat, lng }) => {
             console.log('gm created');
 
 
-            console.log('latitudine', latitudine);
-            console.log('longitudine', longitudine);
-            if (latitudine !== 46.43822268835372 && longitudine !== 23.18524534738386) {
-                await googleMap.addMarker({coordinate: {lat: latitudine, lng: longitudine}, title: 'My location2'});
-            }
+            // console.log('latitudine', latitudine);
+            // console.log('longitudine', longitudine);
+            // if (latitudine !== 46.43822268835372 && longitudine !== 23.18524534738386) {
+            //     await googleMap.addMarker({coordinate: {lat: latitudine, lng: longitudine}, title: 'My location2'});
+            // }
 
             await googleMap.setOnMapClickListener(({ latitude, longitude }) => {
                 console.log('map clicked', latitude, longitude);
@@ -81,4 +81,4 @@ const MyMap: React.FC<MyMapProps> = ({ lat, lng }) => {
 
 }
 
-export default MyMap;
+export default MapNoMarkers;

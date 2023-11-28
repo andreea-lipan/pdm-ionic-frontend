@@ -14,8 +14,9 @@ export const MyModal: React.FC = () => {
         const wrapperAnimation = createAnimation()
             .addElement(root.querySelector('.modal-wrapper')!)
             .keyframes([
-                { offset: 0, opacity: '0', transform: 'scale(0)' },
-                { offset: 1, opacity: '0.99', transform: 'scale(1)' }
+                { offset: 0, opacity: '1', transform: 'scale(0)' },
+                { offset: 0.5, opacity: '0', transform: 'scale(0.5)' },
+                { offset: 1, opacity: '1', transform: 'scale(0.5)' }
             ]);
 
         return createAnimation()
@@ -33,7 +34,7 @@ export const MyModal: React.FC = () => {
     return (
         <>
             <IonModal isOpen={showModal} enterAnimation={enterAnimation} leaveAnimation={leaveAnimation}>
-                <p>This is modal content</p>
+                <p>HEYYYYYYYYYYYYYYYYYYYY</p>
                 <IonButton onClick={() => setShowModal(false)}>Close Modal</IonButton>
             </IonModal>
             <IonButton onClick={() => setShowModal(true)}>Show Modal</IonButton>

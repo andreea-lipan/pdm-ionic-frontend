@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { IonItem, IonLabel } from '@ionic/react';
+import React, {memo, useEffect} from 'react';
+import {createAnimation, IonItem, IonLabel} from '@ionic/react';
 import { getLogger } from '../logger';
 import { BeehiveProps } from './BeehiveProps';
 
@@ -10,6 +10,8 @@ interface PaintingPropsExt extends BeehiveProps {
 }
 
 const Beehive: React.FC<PaintingPropsExt> = ({ _id, index,managerName, autumnTreatment, saved,  onEdit }) => {
+
+
     return (
         <IonItem onClick={() => onEdit(_id)}>
             <IonLabel>{index}</IonLabel>
